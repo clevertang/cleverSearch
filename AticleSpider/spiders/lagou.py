@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+__author__ = 'clevertang'
 import scrapy
 import time
 from scrapy.linkextractors import LinkExtractor

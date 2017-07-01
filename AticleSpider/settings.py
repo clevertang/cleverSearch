@@ -33,7 +33,7 @@ DOWNLOAD_DELAY = 1
 #CONCURRENT_REQUESTS_PER_IP = 16
 
 # Disable cookies (enabled by default)
-#COOKIES_ENABLED = False
+COOKIES_ENABLED = False
 
 # Disable Telnet Console (enabled by default)
 #TELNETCONSOLE_ENABLED = False
@@ -46,15 +46,17 @@ DOWNLOAD_DELAY = 1
 
 # Enable or disable spider middlewares
 # See http://scrapy.readthedocs.org/en/latest/topics/spider-middleware.html
-#SPIDER_MIDDLEWARES = {
+# SPIDER_MIDDLEWARES = {
 #    'AticleSpider.middlewares.AticlespiderSpiderMiddleware': 543,
-#}
+# }
 
 # Enable or disable downloader middlewares
 # See http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
-#DOWNLOADER_MIDDLEWARES = {
-#    'AticleSpider.middlewares.MyCustomDownloaderMiddleware': 543,
-#}
+DOWNLOADER_MIDDLEWARES = {
+   'AticleSpider.middlewares.RandomUserAgentMiddleware': 543,
+    # 'AticleSpider.middlewares.JSPageMiddleware': 1,
+    'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
+}
 
 # Enable or disable extensions
 # See http://scrapy.readthedocs.org/en/latest/topics/extensions.html
@@ -66,10 +68,11 @@ DOWNLOAD_DELAY = 1
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
    # 'AticleSpider.pipelines.AticlespiderPipeline': 300,
-   #  'AticleSpider.pipelines.JsonWithEncodingPipeline':2,
+    'AticleSpider.pipelines.ElasticSearchPipeline':2,
    #  'AticleSpider.pipelines.JsonExporterPipleline':2,
    #  'scrapy.pipelines.images.ImagesPipeline':1,
-    'AticleSpider.pipelines.MysqlTwistedPipline':100
+   #  'AticleSpider.pipelines.MysqlTwistedPipline':100
+
 
 }
 IMAGES_URLS_FIELD="front_image_url"

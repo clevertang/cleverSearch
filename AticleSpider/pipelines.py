@@ -11,7 +11,9 @@ from scrapy.exporters import JsonItemExporter
 from twisted.enterprise import adbapi
 import MySQLdb
 import MySQLdb.cursors
+from w3lib.html import remove_tags
 
+from AticleSpider.modles.modles import Article
 
 class AticlespiderPipeline(object):
     def process_item(self, item, spider):
@@ -106,3 +108,16 @@ class MysqlTwistedPipline(object):
 
         print(insert_sql, params)
         cursor.execute(insert_sql, params)
+
+
+class ElasticSearchPipeline(object):
+    # 写入数据到es中
+       def process_item(self, item, spider):
+        item.save_to_es()
+
+        # title_suggest = self.gen_suggests(article.title, article.tags)
+        # article.title_suggest = title_suggest
+
+
+
+        return item

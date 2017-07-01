@@ -4,9 +4,10 @@
 #
 # See documentation in:
 # http://doc.scrapy.org/en/latest/topics/spider-middleware.html
-
+from fake_useragent import UserAgent
 from scrapy import signals
-
+from scrapy.http import HtmlResponse
+from selenium import webdriver
 
 class AticlespiderSpiderMiddleware(object):
     # Not all methods need to be defined. If a method is not defined,
@@ -54,3 +55,34 @@ class AticlespiderSpiderMiddleware(object):
 
     def spider_opened(self, spider):
         spider.logger.info('Spider opened: %s' % spider.name)
+
+class RandomUserAgentMiddleware(object):
+    #随机更换useragent
+    def __init__(self,crawler):
+        super(RandomUserAgentMiddleware,self).__init__()
+        self.ua=UserAgent()
+        self.ua_type = crawler.settings.get('RANDOM_UA_TYPE', 'random')
+    @classmethod
+    def from_crawler(cls,crawler):
+        return cls(crawler)
+
+    def process_request(self,request,spider):
+        def get_ua():
+            return getattr(self.ua,self.ua_type)
+        # random_user=get_ua()
+        request.headers.setdefault("User-Agent",get_ua())
+
+
+class JSPageMiddleware(object):
+    # def __init__(self):
+    #     self.browser= webdriver.Chrome(executable_path="G:/python/selenium/chromedriver.exe")
+    #     super(JSPageMiddleware,self).__init__()
+    def process_request(self, request, spider):
+        # 加个if可以过滤下,其实用url过滤应该也可以
+        if spider.name == "jobbole":
+            brower = webdriver.Chrome(executable_path="G:/python/selenium/chromedriver.exe")
+            brower.get(request.url)
+            import time
+            time.sleep(1)
+            print("访问{0}".format(request.url))
+            return HtmlResponse(url=brower.current_url, body=brower.page_source, encoding='utf-8', request=request)

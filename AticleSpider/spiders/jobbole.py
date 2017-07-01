@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+from selenium import webdriver
+
+__author__ = 'clevertang'
 import re
 import scrapy
 import datetime
@@ -6,15 +9,36 @@ from scrapy.http import Request
 from urllib import parse
 from scrapy.loader import ItemLoader
 import time
-
+import os
 from AticleSpider.items import JobBoleArticleItem, ArticleItemLoader
 from utils.common import get_md5
+from scrapy.xlib.pydispatch import dispatcher
+from scrapy import signals
+
 
 
 class JobboleSpider(scrapy.Spider):
     name = "jobbole"
     allowed_domains = ["python.jobbole.com"]
     start_urls = ['http://python.jobbole.com/all-posts/']
+
+    # def __init__(self):
+    #
+    #     self.browser= webdriver.Chrome(executable_path="G:/python/selenium/chromedriver.exe")
+    #     super(JobboleSpider,self).__init__()
+    #     dispatcher.connect(self.spider_closed,signals.spider_closed())
+    #
+    # def spider_closed(self,spider):
+    #     #爬虫退出时关闭chrome
+    #     print("spider closed")
+    #     self.browser.quit()
+
+    #收集404出错页面
+    # handle_httpstatus_list = [404]
+
+    # def __init__(self):
+    #     self.fail_urls=[]
+
 
     def parse(self, response):
         """
@@ -23,6 +47,10 @@ class JobboleSpider(scrapy.Spider):
         """
 
         #解析列表页中的所有文章url并交给scrapy下载后并进行解析
+
+        # if response.status==404:
+        #     self.fail_urls.append(response.url)
+        #     self.crawler.status.inc_val('failed_url')
         post_nodes = response.css("#archive .floated-thumb .post-thumb a")
         for post_node in post_nodes:
             image_url = post_node.css("img::attr(src)").extract_first("")
@@ -114,6 +142,8 @@ class JobboleSpider(scrapy.Spider):
         item_loader.add_css("content", "div.entry")
 
         article_item = item_loader.load_item()
+
+
 
 
         yield article_item

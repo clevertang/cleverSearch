@@ -1,3 +1,4 @@
+__author__ = 'clevertang'
 # -*- coding: utf-8 -*-
 
 # Define here the models for your scraped items
@@ -10,9 +11,12 @@ import scrapy
 from scrapy.loader import ItemLoader
 from scrapy.loader.processors import MapCompose, Join, TakeFirst
 from w3lib.html import remove_tags
+
+from AticleSpider.modles.modles import Article
 from AticleSpider.settings import SQL_DATETIME_FORMAT
 from utils.common import extract_num
-
+from elasticsearch_dsl.connections import connections
+es=connections.create_connection(Article._doc_type.using)
 
 class AticlespiderItem(scrapy.Item):
     # define the fields for your item here like:
@@ -66,7 +70,7 @@ class JobBoleArticleItem(scrapy.Item):
     front_image_url = scrapy.Field(
         output_processor=MapCompose(return_value)
     )
-    # front_image_path = scrapy.Field()
+    front_image_path = scrapy.Field()
     praise_nums = scrapy.Field(
         input_processor=MapCompose(get_nums)
     )
@@ -82,22 +86,40 @@ class JobBoleArticleItem(scrapy.Item):
     )
     content = scrapy.Field()
 
+
     def get_insert_sql(self):
         insert_sql = """
-            insert into jobbole_article(title, url, create_date, fav_nums, front_image_url, url_object_id,
-            praise_nums, comment_nums, tags, content)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE content=VALUES(fav_nums)
+            insert into jobbole_article(title, url, create_date, fav_nums)
+            VALUES (%s, %s, %s, %s) ON DUPLICATE KEY UPDATE content=VALUES(fav_nums)
         """
+        params = (self["title"], self["url"], self["create_date"], self["fav_nums"])
 
-        fron_image_url = ""
-        # content = remove_tags(self["content"])
-
-        if self["front_image_url"]:
-            fron_image_url = self["front_image_url"][0]
-        params = (self["title"], self["url"], self["create_date"], self["fav_nums"],
-                  fron_image_url, self["url_object_id"], self["praise_nums"], self["comment_nums"],
-                  self["tags"], self["content"])
         return insert_sql, params
+
+
+    def save_to_es(self):
+        article = Article()
+        article.title = self['title']
+        article.create_date = self["create_date"]
+        article.content = remove_tags(self["content"])
+        article.front_image_url = self["front_image_url"]
+        if "front_image_path" in self:
+            article.front_image_path = self["front_image_path"]
+        article.praise_nums = self["praise_nums"]
+        article.fav_nums = self["fav_nums"]
+        article.comment_nums = self["comment_nums"]
+        article.url = self["url"]
+        article.tags = self["tags"]
+        article.meta.id = self["url_object_id"]
+
+        article.suggest = gen_suggests(Article._doc_type.index, ((article.title,10),(article.tags, 7)))
+
+        article.save()
+
+        # redis_cli.incr("jobbole_count")
+
+        return
+
 
 class ZhihuQuestionItem(scrapy.Item):
     #知乎的问题 item
@@ -246,3 +268,21 @@ class LagouJobItem(scrapy.Item):
 class LagouJobItemLoader(ItemLoader):
     #自定义itemloader
     default_output_processor = TakeFirst()
+
+
+#用于es搜索中的生成搜索建议
+def gen_suggests(index,info_tuple):
+    #根据字符串生成搜索建议数组
+    used_words=set()
+    suggests=[]
+    for text,weight in info_tuple:
+        if text:
+            #调用es的analyze接口分析字符串
+            words=es.indices.analyze(index=index,analyzer="ik_max_word",params={"filter":["lowercase"]},body=text)
+            analyzed_words=set(r["token"] for r in words["tokens"] if len(r["token"])>1)
+            new_words=analyzed_words-used_words
+        else:
+            new_words=set()
+        if new_words:
+            suggests.append({"input":list(new_words),"weight":weight})
+    return suggests
