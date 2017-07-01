@@ -98,7 +98,7 @@ class GetIP(object):
             else:
                 return self.get_random_ip()
 # print(crawl_ips())
-# crawl_ips()
-if __name__=="__main__":
-    get_ip=GetIP()
-    get_ip.get_random_ip()
+crawl_ips()
+# if __name__=="__main__":
+#     get_ip=GetIP()
+#     get_ip.get_random_ip()
